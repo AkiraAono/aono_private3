@@ -1,12 +1,13 @@
-import { useState } from "react";
+import React, { useState } from "react";
+import { useLocation, Link } from "react-router-dom";
 
 import "./App.css";
 
 // ボードのサイズ(縦と横)
-const BOARD_SIZE: number = 5;
+let BOARD_SIZE: number = 5;
 
 // マインの確率(0.0〜1.0)
-const MINE_RATE: number = 0.200;
+const MINE_RATE: number = 0.150;
 
 // ゲームの状態
 enum GameState {
@@ -37,12 +38,23 @@ function Masu(props: { row: number; column: number; callback: (row: number, colu
 
   let prop: MasuProps = board[props.row][props.column];
 
+  // ゲームクリア後の処理・・マインのますに丸をつける
+  if (gameState === GameState.CLEAR) {
+    if (prop.isMine === true) {
+      return (
+        <button disabled={true} className="button-masu">
+          {'●'}
+        </button>
+      );
+    }
+  }
+
   // このマスが開いていない時は空白のボタンを表示する
   if (prop.isOpened === false) {
     return (
       <button onClick={() => {
         props.callback(props.row, props.column);
-      }}>
+      }} className="button-masu">
         {'　'}
       </button>
     );
@@ -51,7 +63,7 @@ function Masu(props: { row: number; column: number; callback: (row: number, colu
   // このマスが開いておりマインなら爆弾を表示
   if (prop.isMine === true) {
     return (
-      <button disabled={true}>
+      <button disabled={true} className="button-masu">
         {'×'}
       </button>
     );
@@ -59,7 +71,7 @@ function Masu(props: { row: number; column: number; callback: (row: number, colu
 
   // このマスが開いており、かつマインではないなら、周囲のマイン数を表示する
   return (
-    <button disabled={true}>
+    <button disabled={true} className="button-masu" >
       {prop.nearMineCount}
     </button>
   );
@@ -94,11 +106,13 @@ function OnMasuClick(row: number, column: number) {
 }
 
 // ゲームを初期化する 
-function initGame() {
+function InitGame() {
 
   allOpenedMasuCount = 0;
 
   allMineCount = 0;
+
+  gameState = GameState.PLAYING;
 
   board = new Array<Array<MasuProps>>(BOARD_SIZE);
 
@@ -116,14 +130,14 @@ function initGame() {
   // 隣接するマインの数を数える
   for (let i = 0; i < board.length; i++) {
     for (let j = 0; j < board[i].length; j++) {
-      board[i][j].nearMineCount = countNearMine(i, j);
+      board[i][j].nearMineCount = CountNearMine(i, j);
     }
   } 
 }
 
 
 // row, column で指定したひとつのマスについて隣接するマインの数を数える関数
-function countNearMine(row: number, column: number) {
+function CountNearMine(row: number, column: number) {
 
   let nearMineCount: number = 0;
 
@@ -147,7 +161,16 @@ function App() {
 
   // ボードが未初期化なら初期化する
   if (board === undefined) {
-    initGame();
+    InitGame();
+  }
+
+  // URL からボードのサイズを取得する
+  let urlBoardSize: number = parseInt(new URLSearchParams(useLocation().search).get('boardsize') ?? '5');  
+
+  // URL のボードサイズが現在のボードサイズと違うなら、ボードを再初期化する
+  if (urlBoardSize !== BOARD_SIZE) {
+    BOARD_SIZE = urlBoardSize;
+    InitGame();
   }
 
   // 1回クリックごとにカウントを増やしステートを更新する
@@ -161,11 +184,11 @@ function App() {
 
   // ボードを表示する。BOARD_SIZE * BOARD_SIZE の格子内に Masu コンポーネントを配置する。
   return (
-    <div>
+    <div className="container">
       <div>
         全部で{allMineCount}個のマインがあるよ。
       </div>
-      <table>
+      <table className="container">
         <tbody>
           {board.map((row, i) => (
             <tr>
@@ -178,8 +201,24 @@ function App() {
           ))}
         </tbody>
       </table>
-      {gameState === GameState.GAMEOVER && <div>死んだ</div>}
-      {gameState === GameState.CLEAR && <div>どうやら生き延びたようだ……。少なくとも今のところは。</div>}
+      {gameState === GameState.GAMEOVER && <div className="game-message">死んだ</div>}
+      {gameState === GameState.CLEAR && <div className="game-message">どうやら生き延びたようだ。<br />少なくとも今のところは。</div>}
+
+      <p />
+      <hr />
+      <p />
+
+      <div>              
+        <button className="button-link" onClick={() => {window.location.reload()}}>
+          NEW GAME
+        </button>
+        <p />
+        ボードのサイズを変更する<br />
+        <Link to={`/?boardsize=5`} className="button-link">5 X 5</Link>
+        <Link to={`/?boardsize=10`} className="button-link">10 X 10</Link>
+        <Link to={`/?boardsize=15`} className="button-link">15 X 15</Link>
+        <Link to={`/?boardsize=20`} className="button-link">20 X 20</Link>
+      </div>
     </div>
   );
 }
