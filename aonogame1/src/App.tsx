@@ -27,6 +27,7 @@ let allOpenedMasuCount: number = 0;
 class MasuProps {
   isOpened: boolean = false;  // 開いているか
   isMine: boolean = false;     // マインか
+  nearMineCount: number = 0;   // 周囲のマインの数
 };
 let board: MasuProps[][];
 
@@ -56,24 +57,13 @@ function Masu(props: { row: number; column: number; callback: (row: number, colu
     );
   }
 
-  // このマスが開いており、かつマインではないなら、周囲のマインを数えて表示する
-  let nearMineCount: number = 0;
-
-  for (let i = -1; i <= 1; i++) {
-    if (props.row + i < 0 || props.row + i >= board.length) { continue; }
-    for (let j = -1; j <= 1; j++) {
-      if (props.column + j < 0 || props.column + j >= board[props.row].length) { continue; }
-      if (board[props.row + i][props.column + j].isMine === true) {
-        nearMineCount++;
-      }
-    }
-  }
-
+  // このマスが開いており、かつマインではないなら、周囲のマイン数を表示する
   return (
     <button disabled={true}>
-      {nearMineCount}
+      {prop.nearMineCount}
     </button>
   );
+  
 }
 
 // マスをクリックした時の処理
@@ -86,9 +76,24 @@ function OnMasuClick(row: number, column: number) {
   } else if (++allOpenedMasuCount >= BOARD_SIZE * BOARD_SIZE - allMineCount) {
     gameState = GameState.CLEAR;
   }
+
+  // もし今開いたマスがゼロのマスなら、隣接するマスも開く
+  if (board[row][column].nearMineCount != 0) {
+    return;
+  }
+
+  for (let i = -1; i <= 1; i++) {
+    if (row + i < 0 || row + i >= board.length) { continue; }
+    for (let j = -1; j <= 1; j++) {
+      if (column + j < 0 || column + j >= board[row].length) { continue; }
+      if (board[row + i][column + j].isOpened === false) {
+        OnMasuClick(row + i, column + j);
+      }
+    }
+  }
 }
 
-// ボードを初期化する。
+// ゲームを初期化する 
 function initGame() {
 
   allOpenedMasuCount = 0;
@@ -107,7 +112,33 @@ function initGame() {
       }
     }
   }
+
+  // 隣接するマインの数を数える
+  for (let i = 0; i < board.length; i++) {
+    for (let j = 0; j < board[i].length; j++) {
+      board[i][j].nearMineCount = countNearMine(i, j);
+    }
+  } 
 }
+
+
+// row, column で指定したひとつのマスについて隣接するマインの数を数える関数
+function countNearMine(row: number, column: number) {
+
+  let nearMineCount: number = 0;
+
+  for (let i = -1; i <= 1; i++) {
+    if (row + i < 0 || row + i >= board.length) { continue; }
+    for (let j = -1; j <= 1; j++) {
+      if (column + j < 0 || column + j >= board[row].length) { continue; }
+      if (board[row + i][column + j].isMine === true) {
+        nearMineCount++;
+      }
+    }
+  }
+  return nearMineCount;
+}
+
 
 // メインのコンポーネント
 function App() {
