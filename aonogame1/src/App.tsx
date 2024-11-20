@@ -14,8 +14,14 @@ enum GameState {
   CLEAR,
   GAMEOVER,
 }
-
+// ゲームの状態
 let gameState: GameState = GameState.PLAYING;
+
+// 全てのマインの数。まだ開いてないものも含む。ゲームクリアの判定に使用する。
+let allMineCount: number;
+
+// 開いているマスの数。ゲームクリアの判定に使用する。
+let allOpenedMasuCount: number = 0;
 
 // マスのプロパティ
 class MasuProps {
@@ -26,7 +32,7 @@ let board: MasuProps[][];
 
 
 // マスのコンポーネント
-function Masu(props: { row: number; column: number; callback: () => void }) {
+function Masu(props: { row: number; column: number; callback: (row: number, column: number) => void }) {
 
   let prop: MasuProps = board[props.row][props.column];
 
@@ -34,8 +40,7 @@ function Masu(props: { row: number; column: number; callback: () => void }) {
   if (prop.isOpened === false) {
     return (
       <button onClick={() => {
-        prop.isOpened = true;
-        props.callback();
+        props.callback(props.row, props.column);
       }}>
         {'　'}
       </button>
@@ -52,31 +57,43 @@ function Masu(props: { row: number; column: number; callback: () => void }) {
   }
 
   // このマスが開いており、かつマインではないなら、周囲のマインを数えて表示する
-  let mineCount: number = 0;
+  let nearMineCount: number = 0;
 
   for (let i = -1; i <= 1; i++) {
     if (props.row + i < 0 || props.row + i >= board.length) { continue; }
     for (let j = -1; j <= 1; j++) {
       if (props.column + j < 0 || props.column + j >= board[props.row].length) { continue; }
       if (board[props.row + i][props.column + j].isMine === true) {
-        mineCount++;
+        nearMineCount++;
       }
     }
   }
 
   return (
     <button disabled={true}>
-      {mineCount}
+      {nearMineCount}
     </button>
   );
 }
 
+// マスをクリックした時の処理
 function OnMasuClick(row: number, column: number) {
 
+  board[row][column].isOpened = true;
+
+  if (board[row][column].isMine === true) {
+    gameState = GameState.GAMEOVER;
+  } else if (++allOpenedMasuCount >= BOARD_SIZE * BOARD_SIZE - allMineCount) {
+    gameState = GameState.CLEAR;
+  }
 }
 
 // ボードを初期化する。
-function initBoard() {
+function initGame() {
+
+  allOpenedMasuCount = 0;
+
+  allMineCount = 0;
 
   board = new Array<Array<MasuProps>>(BOARD_SIZE);
 
@@ -85,6 +102,9 @@ function initBoard() {
     for (let j = 0; j < board[i].length; j++) {
       board[i][j] = new MasuProps();
       board[i][j].isMine = Math.random() < MINE_RATE;
+      if (board[i][j].isMine === true) {
+        allMineCount++;
+      }
     }
   }
 }
@@ -96,20 +116,24 @@ function App() {
 
   // ボードが未初期化なら初期化する
   if (board === undefined) {
-    initBoard();
+    initGame();
   }
 
   // 1回クリックごとにカウントを増やしステートを更新する
   const [stateCount, AddStateCount] = useState<number>(0);
 
   // マスをクリックした時のステート変更処理
-  function AddCountCallback() {
+  function AddCountCallback(row: number, column: number) {
     AddStateCount(stateCount + 1);
+    OnMasuClick(row, column);
   }
 
   // ボードを表示する。BOARD_SIZE * BOARD_SIZE の格子内に Masu コンポーネントを配置する。
   return (
     <div>
+      <div>
+        全部で{allMineCount}個のマインがあるよ。
+      </div>
       <table>
         <tbody>
           {board.map((row, i) => (
