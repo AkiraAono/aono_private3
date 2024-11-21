@@ -49,12 +49,15 @@ function Masu(props: { row: number; column: number; callback: (row: number, colu
     }
   }
 
-  // このマスが開いていない時は空白のボタンを表示する
+  // このマスが開いていない時は空白のボタンを表示する。ゲームオーバーやクリア時は押せないようにする
   if (prop.isOpened === false) {
     return (
-      <button onClick={() => {
-        props.callback(props.row, props.column);
-      }} className="button-masu">
+      <button disabled={gameState !== GameState.PLAYING}  
+        onClick={() => {
+          props.callback(props.row, props.column);
+        }} 
+        className="button-masu"
+      >
         {'　'}
       </button>
     );
@@ -90,7 +93,7 @@ function OnMasuClick(row: number, column: number) {
   }
 
   // もし今開いたマスがゼロのマスなら、隣接するマスも開く
-  if (board[row][column].nearMineCount != 0) {
+  if (board[row][column].nearMineCount !== 0) {
     return;
   }
 
