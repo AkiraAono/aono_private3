@@ -49,7 +49,7 @@ function Masu(props: {
     if (prop.isMine === true) {
       return (
         <button disabled={true} className="button-masu">
-          {'●'}
+          {'💣'}
         </button>
       );
     }
@@ -78,7 +78,7 @@ function Masu(props: {
   if (prop.isMine === true) {
     return (
       <button disabled={true} className="button-masu">
-        {'×'}
+         {'🔥'}
       </button>
     );
   }
@@ -94,6 +94,10 @@ function Masu(props: {
 
 // マスをクリックした時の処理
 function OnMasuClick(row: number, column: number) {
+  // 最初のクリック時にマインを配置する
+  if (allOpenedMasuCount === 0) {
+    InitGame(row, column);
+  }
 
   board[row][column].isOpened = true;
 
@@ -127,31 +131,40 @@ function OnMasuRightClick(row: number, column: number) {
 }
 
 // ゲームを初期化する 
-function InitGame() {
-
+function InitGame(excludeRow?: number, excludeColumn?: number) {
   allOpenedMasuCount = 0;
-
   allMineCount = 0;
-
   gameState = GameState.PLAYING;
 
   board = new Array<Array<MasuProps>>(BOARD_SIZE);
 
+  // ボードの初期化
   for (let i = 0; i < board.length; i++) {
     board[i] = new Array<MasuProps>(BOARD_SIZE);
     for (let j = 0; j < board[i].length; j++) {
       board[i][j] = new MasuProps();
-      board[i][j].isMine = Math.random() < MINE_RATE;
-      if (board[i][j].isMine === true) {
-        allMineCount++;
-      }
     }
   }
 
-  // 隣接するマインの数を数える
-  for (let i = 0; i < board.length; i++) {
-    for (let j = 0; j < board[i].length; j++) {
-      board[i][j].nearMineCount = CountNearMine(i, j);
+  // マインの配置（最初にクリックしたマスを除外）
+  if (excludeRow !== undefined && excludeColumn !== undefined) {
+    for (let i = 0; i < board.length; i++) {
+      for (let j = 0; j < board[i].length; j++) {
+        // 最初にクリックしたマスにはマインを配置しない
+        if (i !== excludeRow || j !== excludeColumn) {
+          board[i][j].isMine = Math.random() < MINE_RATE;
+          if (board[i][j].isMine === true) {
+            allMineCount++;
+          }
+        }
+      }
+    }
+
+    // 隣接するマインの数を数える
+    for (let i = 0; i < board.length; i++) {
+      for (let j = 0; j < board[i].length; j++) {
+        board[i][j].nearMineCount = CountNearMine(i, j);
+      }
     }
   }
 }
@@ -177,8 +190,6 @@ function CountNearMine(row: number, column: number) {
 
 // メインのコンポーネント
 function App() {
-
-  console.log("IN APP");
 
   // ボードが未初期化なら初期化する
   if (board === undefined) {
@@ -210,7 +221,7 @@ function App() {
   return (
     <div className="container">
       <div>
-        全部で{allMineCount}個のマインがあるよ。
+        全部で{allOpenedMasuCount === 0 ? " ??? " : allMineCount}個のマインがあるよ。
       </div>
       <table className="container">
         <tbody>

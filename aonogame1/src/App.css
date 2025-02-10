@@ -41,6 +41,10 @@
   width: 40px;
   height: 40px;
   font-size: 2rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  line-height: 1;
 }
 
 .button-link {
