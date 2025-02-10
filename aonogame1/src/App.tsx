@@ -28,13 +28,19 @@ let allOpenedMasuCount: number = 0;
 class MasuProps {
   isOpened: boolean = false;  // 開いているか
   isMine: boolean = false;     // マインか
+  isFlag: boolean = false;    // 旗が立っているか
   nearMineCount: number = 0;   // 周囲のマインの数
 };
 let board: MasuProps[][];
 
 
 // マスのコンポーネント
-function Masu(props: { row: number; column: number; callback: (row: number, column: number) => void }) {
+function Masu(props: {
+  row: number;
+  column: number;
+  callback: (row: number, column: number) => void;
+  onContextMenu: (row: number, column: number) => void;
+}) {
 
   let prop: MasuProps = board[props.row][props.column];
 
@@ -49,16 +55,21 @@ function Masu(props: { row: number; column: number; callback: (row: number, colu
     }
   }
 
-  // このマスが開いていない時は空白のボタンを表示する。ゲームオーバーやクリア時は押せないようにする
+  // このマスが開いていない時は空白のボタンまたは旗を表示する
   if (prop.isOpened === false) {
     return (
-      <button disabled={gameState !== GameState.PLAYING}  
+      <button
+        disabled={gameState !== GameState.PLAYING}
         onClick={() => {
           props.callback(props.row, props.column);
-        }} 
+        }}
+        onContextMenu={(e) => {
+          e.preventDefault();  // デフォルトのコンテキストメニューを防ぐ
+          props.onContextMenu(props.row, props.column);
+        }}
         className="button-masu"
       >
-        {'　'}
+        {prop.isFlag ? '🚩' : '　'}
       </button>
     );
   }
@@ -78,7 +89,7 @@ function Masu(props: { row: number; column: number; callback: (row: number, colu
       {prop.nearMineCount}
     </button>
   );
-  
+
 }
 
 // マスをクリックした時の処理
@@ -105,6 +116,13 @@ function OnMasuClick(row: number, column: number) {
         OnMasuClick(row + i, column + j);
       }
     }
+  }
+}
+
+// 右クリックで旗を立てる/外す処理
+function OnMasuRightClick(row: number, column: number) {
+  if (!board[row][column].isOpened && gameState === GameState.PLAYING) {
+    board[row][column].isFlag = !board[row][column].isFlag;
   }
 }
 
@@ -135,7 +153,7 @@ function InitGame() {
     for (let j = 0; j < board[i].length; j++) {
       board[i][j].nearMineCount = CountNearMine(i, j);
     }
-  } 
+  }
 }
 
 
@@ -168,7 +186,7 @@ function App() {
   }
 
   // URL からボードのサイズを取得する
-  let urlBoardSize: number = parseInt(new URLSearchParams(useLocation().search).get('boardsize') ?? '5');  
+  let urlBoardSize: number = parseInt(new URLSearchParams(useLocation().search).get('boardsize') ?? '5');
 
   // URL のボードサイズが現在のボードサイズと違うなら、ボードを再初期化する
   if (urlBoardSize !== BOARD_SIZE) {
@@ -181,8 +199,11 @@ function App() {
 
   // マスをクリックした時のステート変更処理
   function AddCountCallback(row: number, column: number) {
-    AddStateCount(stateCount + 1);
-    OnMasuClick(row, column);
+    // 旗が立っているマスは開けない
+    if (!board[row][column].isFlag) {
+      AddStateCount(stateCount + 1);
+      OnMasuClick(row, column);
+    }
   }
 
   // ボードを表示する。BOARD_SIZE * BOARD_SIZE の格子内に Masu コンポーネントを配置する。
@@ -197,7 +218,15 @@ function App() {
             <tr>
               {row.map((column, j) => (
                 <td>
-                  <Masu row={i} column={j} callback={AddCountCallback} />
+                  <Masu
+                    row={i}
+                    column={j}
+                    callback={AddCountCallback}
+                    onContextMenu={(row, col) => {
+                      OnMasuRightClick(row, col);
+                      AddStateCount(stateCount + 1);  // 画面を更新するため
+                    }}
+                  />
                 </td>
               ))}
             </tr>
@@ -211,8 +240,8 @@ function App() {
       <hr />
       <p />
 
-      <div>              
-        <button className="button-link" onClick={() => {window.location.reload()}}>
+      <div>
+        <button className="button-link" onClick={() => { window.location.reload() }}>
           NEW GAME
         </button>
         <p />
