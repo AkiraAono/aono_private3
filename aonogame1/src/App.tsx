@@ -187,6 +187,30 @@ function CountNearMine(row: number, column: number) {
   return nearMineCount;
 }
 
+// ランダムでクリア後のメッセージを表示する
+
+function ShowClearMessage(): React.ReactNode {
+  const messages = [
+    "どうやら生き延びたようだ。\n少なくとも今のところは。",
+    "死すべき運命に抗う者は\nどのような逆境にも屈することはない。",
+    "ただ目の前の道を歩けば\nそれが最短の道であることを\n忘れてはならない。",
+    "それでも生き延びたならば、\nそれはあなたの力だ。",
+    "あなたはまだ生きている。\nただそれだけが真実である。",
+    "何事にも屈しない意志こそが\n目の前の道を歩く者の\n唯一の力である。",
+    "安堵の時が訪れる…。\nさあ、家に帰ろう。",
+    "今はまだ死すべき時ではない。\n運命は自らの手で切り開くものだ。",
+    "この荒廃した世界でも、\n希望を持つことはできる。",
+    "命の灯火が、まだ残っている。\nそれを信じて歩け。",
+    "最後に見たあの夢を\n忘れることはできない。\nいつまでも……。",
+    "死を覚悟した時こそ、\n生きることの意味がわかるのだ。",
+    "祝杯をあげよう。\nかつて生きた、友のために。",
+    "彼方の空へと飛び立つその翼は\nあなたの魂をつなぐ糸である。",
+    "これは終わりではない。\nまだ始まったばかりだ。",
+    "生き延びようと足掻く者だけが\n明日への道を見つけることができる。",
+  ];
+  const message = messages[Math.floor(Math.random() * messages.length)];
+  return <div style={{ whiteSpace: 'pre-line' }}>{message}</div>;
+}
 
 // メインのコンポーネント
 function App() {
@@ -245,7 +269,7 @@ function App() {
         </tbody>
       </table>
       {gameState === GameState.GAMEOVER && <div className="game-message">死んだ</div>}
-      {gameState === GameState.CLEAR && <div className="game-message">どうやら生き延びたようだ。<br />少なくとも今のところは。</div>}
+      {gameState === GameState.CLEAR && <div className="game-message">{ShowClearMessage()}</div>}
 
       <p />
       <hr />
